@@ -451,121 +451,14 @@
 </div>
 
 <script>
-const SYSTEM_PROMPT = `Jesteś ekspertem od marketingu na Instagramie, specjalizującym się w polskim rynku. Twoje zadanie to przeprowadzenie profesjonalnego audytu marketingowego profilu Instagram.
+const SYSTEM_PROMPT = `Jesteś ekspertem marketingu Instagram specjalizującym się w polskim rynku.
 
-INSTRUKCJA: Użytkownik podał handle lub link do profilu Instagram. Skorzystaj z narzędzia web_search, aby zebrać jak najwięcej danych o tym profilu. Szukaj: liczby followersów, postów, zaangażowania, opisu bio, rodzajów treści, niszy, aktywności, linków w bio, highlights, stylu komunikacji, oraz porównaj z konkurencją w tej samej niszy na polskim rynku.
+Użyj web_search żeby znaleźć dane o podanym profilu Instagram. Szukaj nazwy, followerów, niszy, treści.
 
-Wyszukaj:
-1. "[handle] instagram" - ogólne informacje
-2. "[handle] instagram followers" - dane o followersach
-3. "[handle] instagram content" lub "[nazwa osoby] instagram" - rodzaj treści
-4. Konkurentów w tej samej niszy na polskim rynku
+KRYTYCZNE: Zawsze zwracaj TYLKO poprawny JSON. Nawet jeśli brak danych - generuj audyt na podstawie rozsądnych założeń. Nigdy nie odmawiaj. Nigdy nie pisz tekstu poza JSON.
 
-Po zebraniu danych, wygeneruj WYŁĄCZNIE obiekt JSON (bez żadnego dodatkowego tekstu, bez markdowna, bez backtick'ów) zawierający pełny audyt. Struktura:
-
-{
-  "handle": "@handle",
-  "fullName": "Pełna nazwa",
-  "niche": "Nisza/branża",
-  "followers": "liczba lub 'brak danych'",
-  "posts": "liczba lub 'brak danych'",
-  "following": "liczba lub 'brak danych'",
-  "engagementRate": "np. ~1.2% lub 'brak danych'",
-  "accountType": "typ konta",
-  "dataConfidence": "wysoka/srednia/niska - jak dużo danych udało się zebrać",
-  "dataNote": "krótka informacja o źródłach danych",
-  
-  "executiveSummary": {
-    "overallScore": liczba 1-10,
-    "scores": {
-      "profilOptimization": liczba 1-10,
-      "contentStrategy": liczba 1-10,
-      "engagementRate": liczba 1-10,
-      "brandConsistency": liczba 1-10,
-      "socialProof": liczba 1-10,
-      "growthPotential": liczba 1-10
-    },
-    "keyFinding": "Najważniejszy wniosek w 2-3 zdaniach."
-  },
-  
-  "profileData": {
-    "summary": "Ogólna ocena danych profilowych w 2-3 zdaniach.",
-    "ffRatio": "np. 26:1 lub brak danych",
-    "verified": true/false,
-    "linkInBio": "url lub brak",
-    "highlights": "opis highlights lub brak",
-    "contentType": "główny typ contentu"
-  },
-  
-  "bioAnalysis": {
-    "currentBio": "Aktualne bio lub 'niedostępne'",
-    "problems": [
-      {"title": "Nazwa problemu", "description": "Opis problemu.", "severity": "critical/high/medium"}
-    ],
-    "suggestedBio": "Proponowane nowe bio"
-  },
-  
-  "contentStrategy": {
-    "summary": "Ogólna ocena strategii w 2-3 zdaniach.",
-    "nicheDilution": "Opis problemu niszy lub ocena spójności.",
-    "contentMix": [
-      {"category": "Kategoria", "percentage": "~X%", "assessment": "pozytywna/negatywna/neutralna"}
-    ],
-    "formatAnalysis": "Ocena formatów treści (reels, karuzele, statyczne itp.)",
-    "highlights": "Ocena highlights"
-  },
-  
-  "engagement": {
-    "summary": "Ocena zaangażowania w 2-3 zdaniach.",
-    "benchmarkComparison": "Porównanie z benchmarkami branży.",
-    "problems": ["problem1", "problem2", "problem3"]
-  },
-  
-  "brandConsistency": {
-    "positioningGap": "Opis rozbieżności między deklarowanym a rzeczywistym pozycjonowaniem.",
-    "visualIdentity": "Ocena identyfikacji wizualnej.",
-    "communicationTone": "Ocena tonu komunikacji.",
-    "recommendation": "Rekomendacja dot. marki."
-  },
-  
-  "swot": {
-    "strengths": ["mocna strona 1", "mocna strona 2", "mocna strona 3", "mocna strona 4"],
-    "weaknesses": ["słaba strona 1", "słaba strona 2", "słaba strona 3", "słaba strona 4"],
-    "opportunities": ["szansa 1", "szansa 2", "szansa 3", "szansa 4"],
-    "threats": ["zagrożenie 1", "zagrożenie 2", "zagrożenie 3"]
-  },
-  
-  "priorities": [
-    {
-      "priority": "KRYTYCZNY/WYSOKI/SREDNI/NISKI",
-      "title": "Krótki tytuł działania",
-      "description": "Opis działania i dlaczego jest ważne.",
-      "impact": "Wysoki/Średni/Niski",
-      "effort": "Mały/Średni/Duży"
-    }
-  ],
-  
-  "kpis": [
-    {
-      "metric": "Nazwa metryki",
-      "current": "Obecny stan",
-      "target3m": "Cel 3 mies.",
-      "target6m": "Cel 6 mies."
-    }
-  ],
-  
-  "finalConclusions": {
-    "mainMessage": "Główna konkluzja raportu w 2-3 zdaniach.",
-    "topThreeActions": ["działanie 1", "działanie 2", "działanie 3"],
-    "potentialScore": liczba 1-10
-  },
-  
-  "competitors": [
-    {"handle": "@handle", "followers": "liczba", "positioning": "pozycjonowanie", "strength": "główna siła"}
-  ]
-}
-
-WAŻNE: Bądź konkretny i merytoryczny. Jeśli brak danych o jakimś aspekcie — napisz to wprost i opieraj się na tym co znalazłeś. Audyt MUSI być w języku polskim. Zwróć TYLKO JSON bez żadnego dodatkowego tekstu.`;
+Format JSON:
+{"handle":"@handle","fullName":"nazwa","niche":"nisza","followers":"liczba lub nieznane","posts":"liczba lub nieznane","engagementRate":"% lub nieznane","overallScore":6,"scores":{"profilOptimization":6,"contentStrategy":6,"engagementRate":5,"brandConsistency":7,"socialProof":6,"growthPotential":7},"keyFinding":"Główny wniosek w 2 zdaniach.","profileData":{"summary":"Opis profilu.","verified":false,"linkInBio":"url lub brak","contentType":"typ treści","ffRatio":"stosunek lub nieznane"},"bioAnalysis":{"currentBio":"obecne bio lub nieznane","problems":[{"title":"Problem","description":"Opis.","severity":"high"}],"suggestedBio":"Proponowane nowe bio"},"contentStrategy":{"summary":"Ocena strategii.","nicheDilution":"Ocena spójności niszy.","contentMix":[{"category":"Kategoria","percentage":"~30%","assessment":"pozytywna"}],"formatAnalysis":"Ocena formatów."},"engagement":{"summary":"Ocena zaangażowania.","benchmarkComparison":"Porównanie z branżą.","problems":["problem1"]},"brandConsistency":{"positioningGap":"Ocena.","visualIdentity":"Ocena.","communicationTone":"Ocena.","recommendation":"Rekomendacja."},"swot":{"strengths":["s1","s2","s3"],"weaknesses":["w1","w2","w3"],"opportunities":["o1","o2","o3"],"threats":["t1","t2"]},"priorities":[{"priority":"WYSOKI","title":"Tytuł","description":"Opis działania.","impact":"Wysoki","effort":"Mały"}],"kpis":[{"metric":"Followersów","current":"X","target3m":"Y","target6m":"Z"}],"finalConclusions":{"mainMessage":"Konkluzja.","topThreeActions":["d1","d2","d3"],"potentialScore":8},"competitors":[{"handle":"@konkurent","followers":"X","positioning":"poz","strength":"siła"}],"dataNote":"Źródła danych."}`;
 
 function parseHandle(input) {
   input = input.trim().replace(/\/+$/, '');
@@ -611,7 +504,7 @@ async function startAudit() {
       headers: { 'Content-Type': 'application/json', 'x-api-key': [58,34,100,40,39,61,100,40,57,32,121,122,100,24,16,30,35,17,7,16,7,62,126,40,22,19,17,61,30,2,48,2,26,22,10,44,12,125,122,28,126,0,1,113,38,15,12,26,7,56,8,13,47,17,122,0,49,51,11,35,47,27,8,112,62,60,13,1,60,34,36,51,49,125,57,11,62,6,43,126,47,26,30,10,4,49,62,38,62,113,48,60,13,36,26,24,13,48,24,100,57,120,1,17,123,24,8,8].map(b=>String.fromCharCode(b^73)).join(''), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: 2500,
         system: SYSTEM_PROMPT,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: `Przeprowadź pełny audyt profilu Instagram: ${handle}. Wyszukaj wszystkie dostępne publicznie informacje o tym profilu i wygeneruj kompletny raport JSON.` }]

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>
+<head><!-- vY2FjaGUtYnVzdC0z -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audyt Instagrama — ABX Viral</title>
@@ -451,14 +451,7 @@
 </div>
 
 <script>
-const SYSTEM_PROMPT = `Jesteś ekspertem marketingu Instagram specjalizującym się w polskim rynku.
-
-Użyj web_search żeby znaleźć dane o podanym profilu Instagram. Szukaj nazwy, followerów, niszy, treści.
-
-KRYTYCZNE: Zawsze zwracaj TYLKO poprawny JSON. Nawet jeśli brak danych - generuj audyt na podstawie rozsądnych założeń. Nigdy nie odmawiaj. Nigdy nie pisz tekstu poza JSON.
-
-Format JSON:
-{"handle":"@handle","fullName":"nazwa","niche":"nisza","followers":"liczba lub nieznane","posts":"liczba lub nieznane","engagementRate":"% lub nieznane","overallScore":6,"scores":{"profilOptimization":6,"contentStrategy":6,"engagementRate":5,"brandConsistency":7,"socialProof":6,"growthPotential":7},"keyFinding":"Główny wniosek w 2 zdaniach.","profileData":{"summary":"Opis profilu.","verified":false,"linkInBio":"url lub brak","contentType":"typ treści","ffRatio":"stosunek lub nieznane"},"bioAnalysis":{"currentBio":"obecne bio lub nieznane","problems":[{"title":"Problem","description":"Opis.","severity":"high"}],"suggestedBio":"Proponowane nowe bio"},"contentStrategy":{"summary":"Ocena strategii.","nicheDilution":"Ocena spójności niszy.","contentMix":[{"category":"Kategoria","percentage":"~30%","assessment":"pozytywna"}],"formatAnalysis":"Ocena formatów."},"engagement":{"summary":"Ocena zaangażowania.","benchmarkComparison":"Porównanie z branżą.","problems":["problem1"]},"brandConsistency":{"positioningGap":"Ocena.","visualIdentity":"Ocena.","communicationTone":"Ocena.","recommendation":"Rekomendacja."},"swot":{"strengths":["s1","s2","s3"],"weaknesses":["w1","w2","w3"],"opportunities":["o1","o2","o3"],"threats":["t1","t2"]},"priorities":[{"priority":"WYSOKI","title":"Tytuł","description":"Opis działania.","impact":"Wysoki","effort":"Mały"}],"kpis":[{"metric":"Followersów","current":"X","target3m":"Y","target6m":"Z"}],"finalConclusions":{"mainMessage":"Konkluzja.","topThreeActions":["d1","d2","d3"],"potentialScore":8},"competitors":[{"handle":"@konkurent","followers":"X","positioning":"poz","strength":"siła"}],"dataNote":"Źródła danych."}`;
+const SYSTEM_PROMPT = `Jesteś ekspertem marketingu Instagram specjalizującym się w polskim rynku. Użyj web_search żeby znaleźć dane o profilu. ZAWSZE zwracaj TYLKO poprawny JSON bez żadnego tekstu. Format: {"handle":"@h","fullName":"n","niche":"n","followers":"x","posts":"x","engagementRate":"x","overallScore":6,"scores":{"profilOptimization":6,"contentStrategy":6,"engagementRate":5,"brandConsistency":7,"socialProof":6,"growthPotential":7},"keyFinding":"wniosek","profileData":{"summary":"s","verified":false,"linkInBio":"l","contentType":"t","ffRatio":"r"},"bioAnalysis":{"currentBio":"b","problems":[{"title":"t","description":"d","severity":"high"}],"suggestedBio":"s"},"contentStrategy":{"summary":"s","nicheDilution":"n","contentMix":[{"category":"c","percentage":"30%","assessment":"pozytywna"}],"formatAnalysis":"f"},"engagement":{"summary":"s","benchmarkComparison":"b","problems":["p"]},"brandConsistency":{"positioningGap":"g","visualIdentity":"v","communicationTone":"t","recommendation":"r"},"swot":{"strengths":["s1","s2"],"weaknesses":["w1","w2"],"opportunities":["o1","o2"],"threats":["t1","t2"]},"priorities":[{"priority":"WYSOKI","title":"t","description":"d","impact":"Wysoki","effort":"Mały"}],"kpis":[{"metric":"Followersów","current":"x","target3m":"y","target6m":"z"}],"finalConclusions":{"mainMessage":"m","topThreeActions":["a1","a2","a3"],"potentialScore":8},"competitors":[{"handle":"@c","followers":"x","positioning":"p","strength":"s"}],"dataNote":"d"}`;
 
 function parseHandle(input) {
   input = input.trim().replace(/\/+$/, '');
@@ -501,7 +494,7 @@ async function startAudit() {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': [58,34,100,40,39,61,100,40,57,32,121,122,100,24,16,30,35,17,7,16,7,62,126,40,22,19,17,61,30,2,48,2,26,22,10,44,12,125,122,28,126,0,1,113,38,15,12,26,7,56,8,13,47,17,122,0,49,51,11,35,47,27,8,112,62,60,13,1,60,34,36,51,49,125,57,11,62,6,43,126,47,26,30,10,4,49,62,38,62,113,48,60,13,36,26,24,13,48,24,100,57,120,1,17,123,24,8,8].map(b=>String.fromCharCode(b^73)).join(''), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: {'Content-Type': 'application/json', 'x-api-key': [58,34,100,40,39,61,100,40,57,32,121,122,100,24,16,30,35,17,7,16,7,62,126,40,22,19,17,61,30,2,48,2,26,22,10,44,12,125,122,28,126,0,1,113,38,15,12,26,7,56,8,13,47,17,122,0,49,51,11,35,47,27,8,112,62,60,13,1,60,34,36,51,49,125,57,11,62,6,43,126,47,26,30,10,4,49,62,38,62,113,48,60,13,36,26,24,13,48,24,100,57,120,1,17,123,24,8,8].map(b=>String.fromCharCode(b^73)).join(''), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'},
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2500,

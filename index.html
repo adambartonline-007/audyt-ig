@@ -160,7 +160,25 @@ async function startAudit() {
     txt = txt.slice(fi, li+1);
     let raw;
     try { raw = JSON.parse(txt); }
-    catch(e) { txt = txt.replace(/,\s*([}\]])/g,'$1'); raw = JSON.parse(txt); }
+    catch(e) {
+      // Aggressive JSON fixing
+      let fixed = txt;
+      // Remove control characters
+      fixed = fixed.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ');
+      // Fix trailing commas
+      fixed = fixed.replace(/,\s*([}\]])/g, '$1');
+      // Fix single quotes used as string delimiters  
+      fixed = fixed.replace(/:\s*'([^']*)'/g, ': "$1"');
+      // Fix unquoted keys
+      fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+      try { raw = JSON.parse(fixed); }
+      catch(e2) {
+        // Last resort: extract JSON with regex
+        const match = fixed.match(/\{[\s\S]*\}/);
+        if (match) { raw = JSON.parse(match[0]); }
+        else throw new Error('Nie mozna sparsowac odpowiedzi AI');
+      }
+    }
     const audit = normalizeAudit(raw, handle);
     renderReport(audit, handle);
     show('report');

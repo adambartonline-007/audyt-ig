@@ -169,6 +169,7 @@ async function startAudit() {
     catch(e) {
       throw new Error('Blad JSON: ' + e.message.slice(0,80));
     }
+    const audit = normalizeAudit(raw, handle);
     renderReport(audit, handle);
     show('report');
   } catch(e) {

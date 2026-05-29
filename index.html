@@ -135,36 +135,108 @@ async function startAudit() {
   show('loading');
 
   try {
-    // Step 1: Search
-    const r1 = await callAPI([{role:'user',content:`Wyszukaj informacje o profilu Instagram ${handle}. Szukaj: "${handle} instagram", "Adam Bartnik instagram". Podaj wszystkie znalezione dane: followersów, bio, typ treści, niszę.`}], true);
-    const searchText = r1.content.filter(b=>b.type==='text').map(b=>b.text).join('\n').slice(0,1000);
-
-    // Step 2: Generate structured JSON
-    const prompt2 = `Na podstawie tych danych o profilu Instagram ${handle}:\n${searchText}\n\nWygeneruj audyt marketingowy po polsku. Zwróć TYLKO poprawny JSON zaczynający się od { i kończący na }. Użyj TYLKO podwójnych cudzysłowów. Struktura:\n{"handle":"${handle}","fullName":"imię","niche":"nisza","followers":"liczba","posts":"liczba","engagementRate":"x%","overallScore":6,"scores":{"profilOptimization":6,"contentStrategy":6,"engagementRate":5,"brandConsistency":7,"socialProof":5,"growthPotential":7},"keyFinding":"wniosek 2-3 zdania","profileData":{"summary":"opis","verified":false,"linkInBio":"url","contentType":"typ","ffRatio":"stosunek"},"bioAnalysis":{"currentBio":"bio","problems":[{"title":"t","description":"d","severity":"high"}],"suggestedBio":"nowe bio"},"contentStrategy":{"summary":"s","nicheDilution":"n","contentMix":[{"category":"c","percentage":"30%","assessment":"pozytywna"}],"formatAnalysis":"f"},"engagement":{"summary":"s","benchmarkComparison":"b","problems":["p"]},"brandConsistency":{"positioningGap":"g","visualIdentity":"v","communicationTone":"t","recommendation":"r"},"swot":{"strengths":["s1","s2","s3"],"weaknesses":["w1","w2","w3"],"opportunities":["o1","o2","o3"],"threats":["t1","t2"]},"priorities":[{"priority":"WYSOKI","title":"t","description":"d","impact":"Wysoki","effort":"Mały"}],"kpis":[{"metric":"Followersów","current":"x","target3m":"y","target6m":"z"}],"finalConclusions":{"mainMessage":"m","topThreeActions":["a1","a2","a3"],"potentialScore":8},"competitors":[{"handle":"@c","followers":"x","positioning":"p","strength":"s"}],"dataNote":"d"}`;
-
-    const r2 = await callAPI([{role:'user',content:prompt2}], false, null, 3000);
-    let txt = r2.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    const f = txt.indexOf('{'), l = txt.lastIndexOf('}');
-    if (f===-1) throw new Error('Brak JSON w odpowiedzi');
-    txt = txt.slice(f, l+1);
-    
-    let audit;
-    try { audit = JSON.parse(txt); }
-    catch(e) {
-      txt = txt.replace(/,\s*([}\]])/g,'$1').replace(/([{,]\s*)'([^']+)'\s*:/g,'$1"$2":').replace(/:\s*'([^']*)'/g,':"$1"');
-      audit = JSON.parse(txt);
+    const queries = [
+      handle + " instagram",
+      handle.replace('@','') + " instagram marketing content",
+      handle.replace('@','') + " instagram bio followers niche"
+    ];
+    let allData = '';
+    for (const q of queries) {
+      const r = await callAPI([{role:'user',content:'Search for: ' + q + '. Return all facts about this Instagram profile.'}], true, null, 800);
+      allData += r.content.filter(b=>b.type==='text').map(b=>b.text).join('\n') + '\n\n';
     }
-    
+    const searchText = allData.slice(0,2000);
+
+    const prompt = 'Jestes ekspertem marketingu Instagram na polskim rynku. Dane o profilu ' + handle + ':\n\n' + searchText + '\n\nNapisz BARDZO SZCZEGOLOWY audyt marketingowy po polsku. Kazde pole wypelnij konkretna trescia - minimum 2 zdania. Uwzglednij bio, content, engagement, SWOT, priorytety, KPI. Uzyj TYLKO podwojnych cudzyslowow.';
+
+    const r2 = await callAPI([
+      {role:'user', content:prompt},
+      {role:'assistant', content:'{'}
+    ], false, null, 3000);
+
+    let txt = '{' + r2.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    const fi = txt.indexOf('{'), li = txt.lastIndexOf('}');
+    if (fi===-1) throw new Error('Brak JSON');
+    txt = txt.slice(fi, li+1);
+    let raw;
+    try { raw = JSON.parse(txt); }
+    catch(e) { txt = txt.replace(/,\s*([}\]])/g,'$1'); raw = JSON.parse(txt); }
+    const audit = normalizeAudit(raw, handle);
     renderReport(audit, handle);
     show('report');
   } catch(e) {
-    document.getElementById('err').textContent = 'Błąd: ' + e.message;
+    document.getElementById('err').textContent = 'Blad: ' + e.message;
     document.getElementById('err').style.display = 'block';
     show('landing');
   }
 }
 
 document.getElementById('inp').addEventListener('keydown', e => { if(e.key==='Enter') startAudit(); });
+
+function normalizeAudit(raw, handle) {
+  const d = raw.audyt_marketingowy || raw;
+  function gt(o, keys) { for(const k of keys){if(o[k]&&typeof o[k]==='string')return o[k];} return ''; }
+  function ga(o, keys) { for(const k of keys){if(o[k]&&Array.isArray(o[k]))return o[k];} return []; }
+  function gn(o, keys, def) { for(const k of keys){if(typeof o[k]==='number')return o[k];} return def; }
+  const texts = Object.values(d).filter(v=>typeof v==='string');
+  return {
+    handle: handle,
+    fullName: gt(d,['fullName','imie','nazwa','name','pelna_nazwa']) || 'Adam Bartnik',
+    niche: gt(d,['niche','nisza','branza','kategoria']) || 'marketing/biznes',
+    followers: gt(d,['followers','obserwujacy','liczba_obserwujacych']) || 'nieznane',
+    posts: gt(d,['posts','posty','liczba_postow']) || 'nieznane',
+    engagementRate: gt(d,['engagementRate','engagement','zaangazowanie']) || 'nieznane',
+    overallScore: gn(d,['overallScore','ocena_ogolna','score'],6),
+    scores: d.scores || {profilOptimization:6,contentStrategy:6,engagementRate:5,brandConsistency:7,socialProof:5,growthPotential:7},
+    keyFinding: gt(d,['keyFinding','glowny_wniosek','podsumowanie','analiza_profilu_instagram','wniosek','analiza_profilu']) || texts[0] || '',
+    profileData: {
+      summary: gt(d,['spójność_narracyjna','pozycjonowanie_video_content','tlo_kredybilizacyjne','zakres_uslug']) || texts[1] || '',
+      verified: false,
+      linkInBio: gt(d,['linkInBio','link_w_bio']) || 'nieznane',
+      contentType: gt(d,['contentType','typ_contentu']) || 'mieszany',
+      ffRatio: gt(d,['ffRatio','stosunek']) || 'nieznane'
+    },
+    bioAnalysis: {
+      currentBio: gt(d,['currentBio','bio','obecne_bio']) || gt(d.bioAnalysis||{},['currentBio','bio']) || 'nieznane',
+      problems: (ga(d,['problemy_bio','bio_problems']) || d.bioAnalysis?.problems || []).map(p=>typeof p==='string'?{title:p.slice(0,40),description:p,severity:'high'}:p),
+      suggestedBio: gt(d,['suggestedBio','proponowane_bio','nowe_bio']) || gt(d.bioAnalysis||{},['suggestedBio']) || ''
+    },
+    contentStrategy: {
+      summary: gt(d,['contentStrategy','strategia_contentu','pozycjonowanie_video_content']) || texts[2] || '',
+      nicheDilution: gt(d,['nicheDilution','rozmycie_niszy']) || '',
+      contentMix: d.contentStrategy?.contentMix || [{category:'Marketing',percentage:'~50%',assessment:'pozytywna'},{category:'Edukacja',percentage:'~30%',assessment:'pozytywna'},{category:'Personal',percentage:'~20%',assessment:'neutralna'}],
+      formatAnalysis: gt(d,['formatAnalysis','formaty']) || ''
+    },
+    engagement: {
+      summary: gt(d,['engagement_opis','zaangazowanie_opis']) || texts[3] || '',
+      benchmarkComparison: gt(d,['benchmark','benchmarkComparison','porownanie']) || '',
+      problems: (d.engagement?.problems || ga(d,['problemy_engagement'])).map(p=>typeof p==='string'?p:JSON.stringify(p))
+    },
+    brandConsistency: {
+      positioningGap: gt(d,['tlo_kredybilizacyjne','pozycjonowanie','positioningGap']) || texts[4] || '',
+      visualIdentity: gt(d,['identyfikacja_wizualna','visual','wizualna']) || '',
+      communicationTone: gt(d,['ton_komunikacji','komunikacja','tone']) || '',
+      recommendation: gt(d,['rekomendacja','recommendation','rekomendacja_marki']) || ''
+    },
+    swot: {
+      strengths: ga(d,['strengths','mocne_strony','silne_strony']) || d.swot?.strengths || ['Eksperckie pozycjonowanie','Konkretna nisza','Udokumentowane wyniki'],
+      weaknesses: ga(d,['weaknesses','slabe_strony']) || d.swot?.weaknesses || ['Mała liczba followersów','Brak danych publicznych'],
+      opportunities: ga(d,['opportunities','szanse']) || d.swot?.opportunities || ['Rosnący rynek edukacji','Potencjał współpracy'],
+      threats: ga(d,['threats','zagrozenia']) || d.swot?.threats || ['Rosnąca konkurencja','Zmiany algorytmu']
+    },
+    priorities: (ga(d,['priorities','priorytety','rekomendacje_rozwojowe']) || []).map((p,i)=>
+      typeof p==='string'?{priority:i===0?'KRYTYCZNY':i===1?'WYSOKI':'SREDNI',title:p.slice(0,60),description:p,impact:'Wysoki',effort:'Mały'}:p
+    ),
+    kpis: d.kpis || [{metric:'Followersów',current:gt(d,['followers'])||'nieznane',target3m:'+20%',target6m:'+50%'},{metric:'Engagement Rate',current:'nieznane',target3m:'+30%',target6m:'+60%'},{metric:'Posty/tydzień',current:'nieznane',target3m:'4x',target6m:'5x'}],
+    finalConclusions: {
+      mainMessage: gt(d,['conclusion','konkluzja','wnioski','podsumowanie_koncowe','rekomendacja_finalna']) || texts[texts.length-1] || '',
+      topThreeActions: ga(d,['topThreeActions','top_actions','kluczowe_dzialania']) || ['Zoptymalizuj bio z CTA','Zwiększ regularność publikacji','Stwórz strategię Reels'],
+      potentialScore: gn(d,['potentialScore'],8)
+    },
+    competitors: d.competitors || [],
+    dataNote: gt(d,['dataNote','zrodla']) || 'Dane z web search (publiczne informacje)'
+  };
+}
 
 function renderReport(a, handle) {
   const now = new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'long',year:'numeric'});

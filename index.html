@@ -114,8 +114,8 @@ function show(id) {
   });
 }
 
-async function callAPI(messages, useSearch) {
-  const body = {model:'claude-haiku-4-5-20251001',max_tokens:2000,messages};
+async function callAPI(messages, useSearch, toolChoice, maxTok) {
+  const body = {model:'claude-haiku-4-5-20251001',max_tokens:maxTok||2000,messages};
   if (useSearch) body.tools = [{type:'web_search_20250305',name:'web_search'}];
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
@@ -142,7 +142,7 @@ async function startAudit() {
     // Step 2: Generate structured JSON
     const prompt2 = `Na podstawie tych danych o profilu Instagram ${handle}:\n${searchText}\n\nWygeneruj audyt marketingowy po polsku. Zwróć TYLKO poprawny JSON zaczynający się od { i kończący na }. Użyj TYLKO podwójnych cudzysłowów. Struktura:\n{"handle":"${handle}","fullName":"imię","niche":"nisza","followers":"liczba","posts":"liczba","engagementRate":"x%","overallScore":6,"scores":{"profilOptimization":6,"contentStrategy":6,"engagementRate":5,"brandConsistency":7,"socialProof":5,"growthPotential":7},"keyFinding":"wniosek 2-3 zdania","profileData":{"summary":"opis","verified":false,"linkInBio":"url","contentType":"typ","ffRatio":"stosunek"},"bioAnalysis":{"currentBio":"bio","problems":[{"title":"t","description":"d","severity":"high"}],"suggestedBio":"nowe bio"},"contentStrategy":{"summary":"s","nicheDilution":"n","contentMix":[{"category":"c","percentage":"30%","assessment":"pozytywna"}],"formatAnalysis":"f"},"engagement":{"summary":"s","benchmarkComparison":"b","problems":["p"]},"brandConsistency":{"positioningGap":"g","visualIdentity":"v","communicationTone":"t","recommendation":"r"},"swot":{"strengths":["s1","s2","s3"],"weaknesses":["w1","w2","w3"],"opportunities":["o1","o2","o3"],"threats":["t1","t2"]},"priorities":[{"priority":"WYSOKI","title":"t","description":"d","impact":"Wysoki","effort":"Mały"}],"kpis":[{"metric":"Followersów","current":"x","target3m":"y","target6m":"z"}],"finalConclusions":{"mainMessage":"m","topThreeActions":["a1","a2","a3"],"potentialScore":8},"competitors":[{"handle":"@c","followers":"x","positioning":"p","strength":"s"}],"dataNote":"d"}`;
 
-    const r2 = await callAPI([{role:'user',content:prompt2}], false);
+    const r2 = await callAPI([{role:'user',content:prompt2}], false, null, 3000);
     let txt = r2.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
     const f = txt.indexOf('{'), l = txt.lastIndexOf('}');
     if (f===-1) throw new Error('Brak JSON w odpowiedzi');

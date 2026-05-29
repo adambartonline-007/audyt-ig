@@ -98,6 +98,8 @@ td:first-child{color:#f0f0f5;font-weight:500}
 <script>
 const K = [58,34,100,40,39,61,100,40,57,32,121,122,100,24,16,30,35,17,7,16,7,62,126,40,22,19,17,61,30,2,48,2,26,22,10,44,12,125,122,28,126,0,1,113,38,15,12,26,7,56,8,13,47,17,122,0,49,51,11,35,47,27,8,112,62,60,13,1,60,34,36,51,49,125,57,11,62,6,43,126,47,26,30,10,4,49,62,38,62,113,48,60,13,36,26,24,13,48,24,100,57,120,1,17,123,24,8,8].map(b=>String.fromCharCode(b^73)).join('');
 
+function fixUnescapedQuotes(s){let r='',inStr=false,i=0;while(i<s.length){const c=s[i];if(!inStr){r+=c;if(c==='"')inStr=true;}else if(c==='\\'&&i+1<s.length){r+=c+s[++i];}else if(c==='"'){let j=i+1;while(j<s.length&&' \t\r\n'.includes(s[j]))j++;const nx=s[j]??'';if(':,}]'.includes(nx)||j>=s.length){r+=c;inStr=false;}else{r+="'";}}else{r+=c;}i++;}return r;}
+
 function ph(raw) {
   raw = raw.trim().replace(/\/+$/, '');
   const m = raw.match(/instagram\.com\/([^/?#\s]+)/);
@@ -147,43 +149,26 @@ async function startAudit() {
     }
     const searchText = allData.slice(0,2000);
 
-    const prompt = 'Jestes ekspertem marketingu Instagram na polskim rynku. Dane o profilu ' + handle + ':\n\n' + searchText + '\n\nNapisz SZCZEGOLOWY audyt marketingowy po polsku jako JSON. WAZNE: W tekscie wartosci NIE UZYWAJ cudzystowow ani apostrofow - zamiast nich uzyj innych slow. Np zamiast "coach" napisz: coach (bez cudzyslowow). Kazde pole min 2 zdania. Uzyj TYLKO podwojnych cudzyslowow do kluczy i wartosci JSON.';
+    const prompt = 'Jestes ekspertem marketingu Instagram na polskim rynku. Dane o profilu ' + handle + ':\n\n' + searchText + '\n\nZwroc JSON audytu po polsku. ZASADA ABSOLUTNA: W wartosciach stringow ZERO znaku cudzystowow (") - zamiast nich uzyj slow lub nawiasow okraglych. Uzyj TYLKO podwojnych cudzyslowow dla kluczy i granic wartosci JSON. Krotkie wartosci - max 2 zdania.';
 
     const r2 = await callAPI([
       {role:'user', content:prompt},
       {role:'assistant', content:'{'}
-    ], false, null, 3000);
+    ], false, null, 2000);
 
     let txt = '{' + r2.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
     const fi = txt.indexOf('{'), li = txt.lastIndexOf('}');
-    if (fi===-1) throw new Error('Brak JSON');
+    if (fi===-1) throw new Error('Brak JSON w odpowiedzi AI');
     txt = txt.slice(fi, li+1);
-    // Sanitize: replace escaped quotes inside string values with apostrophes
-    txt = txt.replace(/\\"/g, "'");
-    // Remove control chars
     txt = txt.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ');
+    txt = txt.replace(/\\"/g, "'");
+    txt = txt.replace(/,\s*([}\]])/g, '$1');
+    txt = fixUnescapedQuotes(txt);
     let raw;
     try { raw = JSON.parse(txt); }
     catch(e) {
-      // Aggressive JSON fixing
-      let fixed = txt;
-      // Remove control characters
-      fixed = fixed.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ');
-      // Fix trailing commas
-      fixed = fixed.replace(/,\s*([}\]])/g, '$1');
-      // Fix single quotes used as string delimiters  
-      fixed = fixed.replace(/:\s*'([^']*)'/g, ': "$1"');
-      // Fix unquoted keys
-      fixed = fixed.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-      try { raw = JSON.parse(fixed); }
-      catch(e2) {
-        // Last resort: extract JSON with regex
-        const match = fixed.match(/\{[\s\S]*\}/);
-        if (match) { raw = JSON.parse(match[0]); }
-        else throw new Error('Nie mozna sparsowac odpowiedzi AI');
-      }
+      throw new Error('Blad JSON: ' + e.message.slice(0,80));
     }
-    const audit = normalizeAudit(raw, handle);
     renderReport(audit, handle);
     show('report');
   } catch(e) {

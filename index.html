@@ -147,7 +147,7 @@ async function startAudit() {
     }
     const searchText = allData.slice(0,2000);
 
-    const prompt = 'Jestes ekspertem marketingu Instagram na polskim rynku. Dane o profilu ' + handle + ':\n\n' + searchText + '\n\nNapisz BARDZO SZCZEGOLOWY audyt marketingowy po polsku. Kazde pole wypelnij konkretna trescia - minimum 2 zdania. Uwzglednij bio, content, engagement, SWOT, priorytety, KPI. Uzyj TYLKO podwojnych cudzyslowow.';
+    const prompt = 'Jestes ekspertem marketingu Instagram na polskim rynku. Dane o profilu ' + handle + ':\n\n' + searchText + '\n\nNapisz SZCZEGOLOWY audyt marketingowy po polsku jako JSON. WAZNE: W tekscie wartosci NIE UZYWAJ cudzystowow ani apostrofow - zamiast nich uzyj innych slow. Np zamiast "coach" napisz: coach (bez cudzyslowow). Kazde pole min 2 zdania. Uzyj TYLKO podwojnych cudzyslowow do kluczy i wartosci JSON.';
 
     const r2 = await callAPI([
       {role:'user', content:prompt},
@@ -158,6 +158,10 @@ async function startAudit() {
     const fi = txt.indexOf('{'), li = txt.lastIndexOf('}');
     if (fi===-1) throw new Error('Brak JSON');
     txt = txt.slice(fi, li+1);
+    // Sanitize: replace escaped quotes inside string values with apostrophes
+    txt = txt.replace(/\\"/g, "'");
+    // Remove control chars
+    txt = txt.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ');
     let raw;
     try { raw = JSON.parse(txt); }
     catch(e) {
